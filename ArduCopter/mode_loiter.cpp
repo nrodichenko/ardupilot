@@ -55,6 +55,14 @@ bool ModeLoiter::do_precision_loiter()
 
 void ModeLoiter::precision_loiter_xy()
 {
+
+    static uint8_t counter = 0;
+    counter++;
+    if (counter > 100) {
+        counter = 0;
+        gcs().send_text(MAV_SEVERITY_CRITICAL, "PL_GO");
+    }
+
     loiter_nav->clear_pilot_desired_acceleration();
     Vector2f target_pos, target_vel_rel;
     if (!copter.precland.get_target_position_cm(target_pos)) {
@@ -166,6 +174,14 @@ void ModeLoiter::run()
         break;
 
     case AltHold_Flying:
+
+
+        static uint8_t counter = 0;
+        counter++;
+        if (counter > 99) {
+            counter = 0;
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "LOI_FLY");
+        }
 
         // set motors to full range
         motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
