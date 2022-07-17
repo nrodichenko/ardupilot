@@ -887,6 +887,9 @@ void GCS_MAVLINK_Copter::handle_mount_message(const mavlink_message_t &msg)
 
 void GCS_MAVLINK_Copter::handleMessage(const mavlink_message_t &msg)
 {
+
+    // gcs().send_text(MAV_SEVERITY_INFO, "MLRX: %u", msg.msgid);
+    
     switch (msg.msgid) {
 
     case MAVLINK_MSG_ID_HEARTBEAT:      // MAV ID: 0
@@ -1204,6 +1207,8 @@ void GCS_MAVLINK_Copter::handleMessage(const mavlink_message_t &msg)
 
 #if PRECISION_LANDING == ENABLED
     case MAVLINK_MSG_ID_LANDING_TARGET:
+
+        // gcs().send_text(MAV_SEVERITY_INFO, "ML_PL");
         copter.precland.handle_msg(msg);
         break;
 #endif

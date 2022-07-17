@@ -1,4 +1,5 @@
 #include "Copter.h"
+#include <GCS_MAVLink/GCS.h>
 
 #if MODE_LOITER_ENABLED == ENABLED
 
@@ -37,32 +38,42 @@ bool ModeLoiter::init(bool ignore_checks)
 #if PRECISION_LANDING == ENABLED
 bool ModeLoiter::do_precision_loiter()
 {
+    static int counter = 0;
     if (!_precision_loiter_enabled) {
+        //gcs().send_text(MAV_SEVERITY_INFO, "PL_TRY_FAIL 1");
         return false;
     }
     if (copter.ap.land_complete_maybe) {
+        //gcs().send_text(MAV_SEVERITY_INFO, "PL_TRY_FAIL 2");
         return false;        // don't move on the ground
     }
     // if the pilot *really* wants to move the vehicle, let them....
-    if (loiter_nav->get_pilot_desired_acceleration().length() > 50.0f) {
+    if (loiter_nav->get_pilot_desired_acceleration().length() > 20.0f) { // decreased from 50.0 for very slow loiter
+        //gcs().send_text(MAV_SEVERITY_INFO, "PL_TRY_FAIL 3");
         return false;
     }
     if (!copter.precland.target_acquired()) {
+        counter++;
+        if (counter > 99) {
+            counter = 0;
+            gcs().send_text(MAV_SEVERITY_INFO, "PL_NO_TRGT");
+        }
         return false; // we don't have a good vector
     }
+    // counter++;
+    // if (counter > 99) {
+    //     counter = 0;
+    //     gcs().send_text(MAV_SEVERITY_INFO, "PL_TRY_OK");
+    // }
     return true;
 }
 
-void ModeLoiter::precision_loiter_xy()
+float ModeLoiter::precision_loiter_xy()
 {
-
     static uint8_t counter = 0;
-    counter++;
-    if (counter > 100) {
-        counter = 0;
-        gcs().send_text(MAV_SEVERITY_CRITICAL, "PL_GO");
-    }
 
+    float _des_acc = loiter_nav->get_pilot_desired_acceleration().length();
+    float _out_yaw_rate = 0.0f;
     loiter_nav->clear_pilot_desired_acceleration();
     Vector2f target_pos, target_vel_rel;
     if (!copter.precland.get_target_position_cm(target_pos)) {
@@ -73,8 +84,28 @@ void ModeLoiter::precision_loiter_xy()
         target_vel_rel.x = -inertial_nav.get_velocity().x;
         target_vel_rel.y = -inertial_nav.get_velocity().y;
     }
+    float target_yaw = copter.precland.get_target_yaw();
+    if (abs(target_yaw) < 0.5f) {
+        _out_yaw_rate = - copter.precland.yaw_p() * target_yaw;
+    }
+    //_out_yaw_rate = 0.0f;
+
     pos_control->set_xy_target(target_pos.x, target_pos.y);
-    pos_control->override_vehicle_velocity_xy(-target_vel_rel);
+    pos_control->override_vehicle_velocity_xy(-target_vel_rel); //TODO make X component always zero
+
+    counter++;
+    if (counter > 99) {
+        counter = 0;
+        gcs().send_text(MAV_SEVERITY_INFO, 
+            "PL_GO: %.3f %.3f %.3f %.3f", 
+            static_cast<double>(_des_acc), 
+            static_cast<double>(target_yaw),
+            static_cast<double>(copter.precland.yaw_p()), 
+            static_cast<double>(_out_yaw_rate)
+        );
+    }
+
+    return _out_yaw_rate;
 }
 #endif
 
@@ -176,21 +207,30 @@ void ModeLoiter::run()
     case AltHold_Flying:
 
 
-        static uint8_t counter = 0;
-        counter++;
-        if (counter > 99) {
-            counter = 0;
-            gcs().send_text(MAV_SEVERITY_CRITICAL, "LOI_FLY");
-        }
-
         // set motors to full range
         motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
 #if PRECISION_LANDING == ENABLED
+        float prec_yaw_rate = 0.0f;
         if (do_precision_loiter()) {
-            precision_loiter_xy();
+            prec_yaw_rate = precision_loiter_xy();
+        }
+        if (
+            (abs(prec_yaw_rate) > 0.01f) 
+            && (abs(target_yaw_rate) < 100.0f)
+        ) { 
+            target_yaw_rate = prec_yaw_rate;
         }
 #endif
+
+        static uint8_t counter = 0;
+        counter++;
+        if (counter > 99) {
+            counter = 0;
+            gcs().send_text(MAV_SEVERITY_INFO, "Y: %.3f", 
+                static_cast<double>(target_yaw_rate)
+            );
+        }
 
         // run loiter controller
         loiter_nav->update();

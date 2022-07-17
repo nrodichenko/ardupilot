@@ -37,10 +37,16 @@ public:
 
     // parses a mavlink message from the companion computer
     void handle_msg(const mavlink_message_t &msg) override;
+    
+    //tsuru
+    float get_target_yaw() { return _target_att.z; };
 
 private:
     uint64_t            _timestamp_us;          // timestamp from message
     float               _distance_to_target;    // distance from the camera to target in meters
+    //tsuru
+    Vector3f            _target_att;
+    Quaternion          _q;
 
     Vector3f            _los_meas_body;         // unit vector in body frame pointing towards target
     bool                _have_los_meas;         // true if there is a valid measurement from the camera

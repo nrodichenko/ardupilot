@@ -104,6 +104,16 @@ const AP_Param::GroupInfo AC_PrecLand::var_info[] = {
     // @RebootRequired: True
     AP_GROUPINFO("LAG", 9, AC_PrecLand, _lag, 0.02f), // 20ms is the old default buffer size (8 frames @ 400hz/2.5ms)
 
+
+    // @Param: YAW_P
+    // @DisplayName: Yaw stabilization P-gain
+    // @Description: P-gain to stabilize along the precland beacon
+    // @Range: -2 2
+    // @Increment: 0.1
+    // @User: Advanced
+    // @Units: 1/s
+    AP_GROUPINFO("YAW_P", 10, AC_PrecLand, _yaw_p, 0.0f),
+
     AP_GROUPEND
 };
 
@@ -448,3 +458,5 @@ void AC_PrecLand::run_output_prediction()
     _target_pos_rel_out_NE.x += land_ofs_ned_m.x;
     _target_pos_rel_out_NE.y += land_ofs_ned_m.y;
 }
+
+float AC_PrecLand::get_target_yaw() { return _backend->get_target_yaw(); };

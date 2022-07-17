@@ -34,7 +34,7 @@ uint32_t AC_PrecLand_Companion::los_meas_time_ms() {
 bool AC_PrecLand_Companion::have_los_meas()
 {
     return _have_los_meas;
-}
+}     
 
 // return distance to target
 float AC_PrecLand_Companion::distance_to_target()
@@ -44,12 +44,25 @@ float AC_PrecLand_Companion::distance_to_target()
 
 void AC_PrecLand_Companion::handle_msg(const mavlink_message_t &msg)
 {
+
+    // static uint8_t counter = 0;
+    // counter++;
+    // if (counter > 50) {
+    //     counter = 0;
+    //     gcs().send_text(MAV_SEVERITY_INFO, "RX_PL");
+    // }
+
     // parse mavlink message
     __mavlink_landing_target_t packet;
     mavlink_msg_landing_target_decode(&msg, &packet);
 
     _timestamp_us = packet.time_usec;
     _distance_to_target = packet.distance;
+
+    //yaw
+    //_q = packet.q;
+    //_q.to_euler(_target_att.x, _target_att.y, _target_att.z);
+    _target_att.z = packet.q[0];
 
     // compute unit vector towards target
     _los_meas_body = Vector3f(-tanf(packet.angle_y), tanf(packet.angle_x), 1.0f);

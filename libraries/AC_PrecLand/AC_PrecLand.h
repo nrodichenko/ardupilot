@@ -91,6 +91,11 @@ public:
     // parameter var table
     static const struct AP_Param::GroupInfo var_info[];
 
+    //tsuru
+    float get_target_yaw();
+    // returns yaw p
+    float yaw_p() const { return _yaw_p; }
+
 private:
     enum estimator_type_t {
         ESTIMATOR_TYPE_RAW_SENSOR = 0,
@@ -124,6 +129,7 @@ private:
     AP_Float                    _land_ofs_cm_y;     // Desired landing position of the camera right of the target in vehicle body frame
     AP_Float                    _accel_noise;       // accelerometer process noise
     AP_Vector3f                 _cam_offset;        // Position of the camera relative to the CG
+    AP_Float                    _yaw_p;
 
     uint32_t                    _last_update_ms;    // system time in millisecond when update was last called
     bool                        _target_acquired;   // true if target has been seen recently

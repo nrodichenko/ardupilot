@@ -900,7 +900,7 @@ protected:
 
 #if PRECISION_LANDING == ENABLED
     bool do_precision_loiter();
-    void precision_loiter_xy();
+    float precision_loiter_xy();
 #endif
 
 private:
